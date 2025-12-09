@@ -18,6 +18,11 @@
 // multiple of 2.
 #define DROP_SPLIT_INDICATOR 10
 
+// Additional margin (pixels) beyond the titlebar(s) that will still be
+// considered a valid "drop to tab" target. Increase this to make it easier
+// to form tabs by dropping slightly off the titlebar.
+#define DROP_SPLIT_MARGIN 30
+
 struct seatop_move_tiling_event {
 	struct sway_container *con;
 	struct sway_node *target_node;
@@ -132,7 +137,9 @@ static bool split_titlebar(struct sway_node *node, struct sway_container *avoid,
 		n_children = 1;
 		avoid_index = -1;
 	}
-	if (layout == L_STACKED && cursor->y < box.y + title_height * n_children) {
+
+	// Allow a small margin beyond titlebar area to make dropping easier.
+	if (layout == L_STACKED && cursor->y < box.y + title_height * n_children + DROP_SPLIT_MARGIN) {
 		// Drop into stacked titlebars.
 		title_box->width = box.width;
 		title_box->height = DROP_SPLIT_INDICATOR;
@@ -140,7 +147,7 @@ static bool split_titlebar(struct sway_node *node, struct sway_container *avoid,
 		split_border(cursor->y, box.y, title_height * n_children,
 			n_children, avoid_index, &title_box->y, after);
 		return true;
-	} else if (layout != L_STACKED && cursor->y < box.y + title_height) {
+	} else if (layout != L_STACKED && cursor->y < box.y + title_height + DROP_SPLIT_MARGIN) {
 		// Drop into side-by-side titlebars.
 		title_box->width = DROP_SPLIT_INDICATOR;
 		title_box->height = title_height;
@@ -362,7 +369,7 @@ static void finalize_move(struct sway_seat *seat) {
 			enum sway_container_layout layout = container_parent_layout(target);
 			if (edge && !is_parallel(layout, edge)) {
 				enum sway_container_layout new_layout = edge == WLR_EDGE_TOP ||
-					edge == WLR_EDGE_BOTTOM ? L_VERT : L_HORIZ;
+				edge == WLR_EDGE_BOTTOM ? L_VERT : L_HORIZ;
 				container_split(target, new_layout);
 			}
 			container_add_sibling(target, con, after);
